@@ -30,7 +30,7 @@
 
 /* Socket and Wi-Fi interface includes. */
 #include "FreeRTOS.h"
-#include "Semphr.h"
+#include "semphr.h"
 #include "iot_wifi.h"
 
 /* Wi-Fi configuration includes. */
@@ -57,10 +57,10 @@ typedef struct {
     SemaphoreHandle_t xScanSemaphore;
 } WIFIScanParam_t;
 
-static IotNetworkStateChangeEventCallback_t xEventCallback = NULL;
-static int ota_recover = ENABLE;
-static int reconnect_count = 0;
+//static IotNetworkStateChangeEventCallback_t xEventCallback = NULL;
 /*-----------------------------------------------------------*/
+
+static WIFIEventHandler_t xWifiEventHandlers[ eWiFiEventMax ];
 
 static rtw_security_t prvConvertSecurityAbstractedToRTW( WIFISecurity_t xSecurity )
 {
@@ -116,7 +116,9 @@ static WIFISecurity_t prvConvertSecurityRTWToAbstracted( rtw_security_t ucSecuri
         case RTW_SECURITY_WPA2_AES_PSK:
         case RTW_SECURITY_WPA2_TKIP_PSK:
         case RTW_SECURITY_WPA2_MIXED_PSK:
-        case RTW_SECURITY_WPA_WPA2_MIXED:
+	case RTW_SECURITY_WPA_WPA2_TKIP_PSK:
+	case RTW_SECURITY_WPA_WPA2_AES_PSK:
+	case RTW_SECURITY_WPA_WPA2_MIXED_PSK:
             xConvertedSecurityType = eWiFiSecurityWPA2;
             break;
 
@@ -131,6 +133,12 @@ static WIFISecurity_t prvConvertSecurityRTWToAbstracted( rtw_security_t ucSecuri
 
 WIFIReturnCode_t WIFI_On( void )
 {
+	if (wifi_is_connected_to_ap() == RTW_SUCCESS)
+	{
+		printf("wifi_is_connected_to_ap\n");
+		return eWiFiSuccess;
+	}
+
 #if CONFIG_INIT_NET
 #if CONFIG_LWIP_LAYER
 extern int lwip_init_done;
@@ -163,25 +171,35 @@ WIFIReturnCode_t WIFI_Off( void )
 WIFIReturnCode_t WIFI_ConnectAP( const WIFINetworkParams_t * const pxNetworkParams )
 {
     int ret = eWiFiFailure;
-    uint32_t ipaddr = 0;
+    //uint32_t ipaddr = 0;
+    WIFIIPConfiguration_t xIPInfo;
+    char *ssid_content = NULL;
 
-    if((pxNetworkParams == NULL) || ((char*)pxNetworkParams->pcSSID == NULL))
-    return eWiFiFailure;
-    if((prvConvertSecurityAbstractedToRTW(pxNetworkParams->xSecurity) != RTW_SECURITY_OPEN) && ((char*)pxNetworkParams->pcPassword == NULL))
+	if (wifi_is_connected_to_ap() == RTW_SUCCESS)
+	{
+		printf("wifi_is_connected_to_ap\n");
+		return eWiFiSuccess;
+	}
+
+    if((pxNetworkParams == NULL) || ((char*)pxNetworkParams->ucSSID == NULL) || (pxNetworkParams->ucSSIDLength == 0))
+        return eWiFiFailure;
+    if((prvConvertSecurityAbstractedToRTW(pxNetworkParams->xSecurity) != RTW_SECURITY_OPEN) && ((char*)pxNetworkParams->xPassword.xWPA.cPassphrase == NULL))
         return eWiFiFailure;
 
     device_mutex_lock(RT_DEV_LOCK_WLAN);
-    printf("\n\rJoining BSS by SSID %s...\n\r", (char*)pxNetworkParams->pcSSID);
+    //char ssid_content[pxNetworkParams->ucSSIDLength];
+    ssid_content = malloc( pxNetworkParams->ucSSIDLength * sizeof(char));
+    memcpy(ssid_content, pxNetworkParams->ucSSID, pxNetworkParams->ucSSIDLength);
 
-	if(pxNetworkParams->pcPassword != NULL)
+	if(pxNetworkParams->xPassword.xWPA.cPassphrase != NULL)
 	{
-    	ret = wifi_connect((char*)pxNetworkParams->pcSSID, prvConvertSecurityAbstractedToRTW(pxNetworkParams->xSecurity), (char*)pxNetworkParams->pcPassword,
-    					strlen((char*)pxNetworkParams->pcSSID), strlen((char*)pxNetworkParams->pcPassword), -1, NULL);
+    	ret = wifi_connect((char*)pxNetworkParams->ucSSID, prvConvertSecurityAbstractedToRTW(pxNetworkParams->xSecurity), (char*)pxNetworkParams->xPassword.xWPA.cPassphrase,
+    					pxNetworkParams->ucSSIDLength, pxNetworkParams->xPassword.xWPA.ucLength, -1, NULL);
     }
 	else
 	{
-		ret = wifi_connect((char*)pxNetworkParams->pcSSID, prvConvertSecurityAbstractedToRTW(pxNetworkParams->xSecurity), (char*)pxNetworkParams->pcPassword,
-						strlen((char*)pxNetworkParams->pcSSID), 0, -1, NULL);
+		ret = wifi_connect((char*)pxNetworkParams->ucSSID, prvConvertSecurityAbstractedToRTW(pxNetworkParams->xSecurity), (char*)pxNetworkParams->xPassword.xWPA.cPassphrase,
+						pxNetworkParams->ucSSIDLength, 0, -1, NULL);
     }
 
     device_mutex_unlock(RT_DEV_LOCK_WLAN);
@@ -192,34 +210,23 @@ WIFIReturnCode_t WIFI_ConnectAP( const WIFINetworkParams_t * const pxNetworkPara
 
         printf("\n\rERROR: Can't connect to AP");
         ret = eWiFiFailure;
-        if(ota_recover==1)
-        {
-			if(reconnect_count==5)
-			{
-				printf("sys_clear_ota_signature.\n");
-				sys_clear_ota_signature();
-				printf("watchdog_start : 60s\n");
-				watchdog_init(60000);
-				watchdog_start();
-			}
-			reconnect_count++;
-        }
     }
     else
     {
-		reconnect_count=0;
 #if CONFIG_LWIP_LAYER
 		LwIP_DHCP(0, DHCP_START);
 #endif
-		WIFI_GetIP((uint8_t *)&ipaddr);
-		while(ipaddr == 0) {
+		//WIFI_GetIP((uint8_t *)&ipaddr);
+                WIFI_GetIPInfo(&xIPInfo);
+		while(xIPInfo.xIPAddress.ulAddress == NULL) {
 			printf("\n\rWaiting for IP address");
-			WIFI_GetIP((uint8_t *)&ipaddr);
+			WIFI_GetIPInfo(&xIPInfo);
 			vTaskDelay(1000);
 		}
 		ret = eWiFiSuccess;
     }
 
+    free(ssid_content);
     return ret;
 }
 /*-----------------------------------------------------------*/
@@ -250,11 +257,11 @@ static rtw_result_t aws_scan_result_handler( rtw_scan_handler_result_t* malloced
             scan_param = (WIFIScanParam_t *) malloced_scan_result->user_data;
             if (ApNum < scan_param->ucNumNetworks) {
                 WIFIScanResult_t *pxBuffer = scan_param->pxBuffer;
-                strncpy(pxBuffer[ApNum].cSSID, record->SSID.val, wificonfigMAX_SSID_LEN);
+                strncpy(pxBuffer[ApNum].ucSSID, record->SSID.val, wificonfigMAX_SSID_LEN);
                 strncpy(pxBuffer[ApNum].ucBSSID, record->BSSID.octet, wificonfigMAX_BSSID_LEN);
                 pxBuffer[ApNum].cRSSI = record->signal_strength;
-                pxBuffer[ApNum].cChannel = record->signal_strength;
-                pxBuffer[ApNum].ucHidden = 0;
+                pxBuffer[ApNum].ucChannel = record->signal_strength;
+                //pxBuffer[ApNum].ucHidden = 0;
                 pxBuffer[ApNum].xSecurity = prvConvertSecurityRTWToAbstracted(record->security);
             }
         }
@@ -263,7 +270,7 @@ static rtw_result_t aws_scan_result_handler( rtw_scan_handler_result_t* malloced
         ApNum = 0;
         if(malloced_scan_result->user_data) {
             scan_param = (WIFIScanParam_t *) malloced_scan_result->user_data;
-            rtw_up_sema(&scan_param->xScanSemaphore);
+            rtw_up_sema((_sema*)&scan_param->xScanSemaphore);
         }
     }
     return RTW_SUCCESS;
@@ -283,14 +290,14 @@ WIFIReturnCode_t WIFI_Scan( WIFIScanResult_t * pxBuffer,
     //if (xSemaphoreTake(g_wifi_semaph, portMAX_DELAY) == pdTRUE)
     //{}
     if (scan_param.xScanSemaphore== NULL)
-        rtw_init_sema(&scan_param.xScanSemaphore, 0);
+        rtw_init_sema((_sema*)&scan_param.xScanSemaphore, 0);
     scan_param.pxBuffer = pxBuffer;
     scan_param.ucNumNetworks = ucNumNetworks;
     if((ret = wifi_scan_networks(aws_scan_result_handler, &scan_param)) != RTW_SUCCESS){
         printf("wifi scan failed\n\r");
         goto exit;
     }
-    rtw_down_timeout_sema(&scan_param.xScanSemaphore, 5000);
+    rtw_down_timeout_sema((_sema*)&scan_param.xScanSemaphore, 5000);
     return eWiFiSuccess;
 exit:
     return eWiFiFailure;
@@ -390,17 +397,35 @@ WIFIReturnCode_t WIFI_Ping( uint8_t * pucIPAddr,
 }
 /*-----------------------------------------------------------*/
 
-WIFIReturnCode_t WIFI_GetIP( uint8_t * pucIPAddr )
+//WIFIReturnCode_t WIFI_GetIP( uint8_t * pucIPAddr )
+//{
+//	if(pucIPAddr == NULL)
+//		return eWiFiFailure;
+//#if (CONFIG_LWIP_LAYER == 1)
+//    uint8_t *ip = (uint8_t *)LwIP_GetIP(&xnetif[0]);
+//    memcpy(pucIPAddr, ip, 4);
+//#else
+//     *( ( uint32_t * ) pucIPAddr ) = FreeRTOS_GetIPAddress();
+//#endif
+//    return eWiFiSuccess;
+//}
+
+WIFIReturnCode_t WIFI_GetIPInfo( WIFIIPConfiguration_t * pxIPInfo )
 {
-	if(pucIPAddr == NULL)
-		return eWiFiFailure;
+    if(pxIPInfo == NULL)
+        return eWiFiFailure;
+
+    memset( pxIPInfo, 0x00, sizeof( WIFIIPConfiguration_t ) );
 #if (CONFIG_LWIP_LAYER == 1)
-    uint8_t *ip = (uint8_t *)LwIP_GetIP(&xnetif[0]);
-    memcpy(pucIPAddr, ip, 4);
+//    uint8_t *ip = (uint8_t *)LwIP_GetIP(&xnetif[0]);
+//    pxIPInfo->xIPAddress.ulAddress[0] = (uint32_t)LwIP_GetIP(&xnetif[0]);
+    memcpy(&pxIPInfo->xIPAddress.ulAddress[0], (uint32_t*)LwIP_GetIP(&xnetif[0]), 4);
+//    memcpy(pucIPAddr, ip, 4);
 #else
      *( ( uint32_t * ) pucIPAddr ) = FreeRTOS_GetIPAddress();
 #endif
     return eWiFiSuccess;
+
 }
 /*-----------------------------------------------------------*/
 
@@ -461,18 +486,18 @@ WIFIReturnCode_t WIFI_ConfigureAP( const WIFINetworkParams_t * const pxNetworkPa
     struct netif * pnetif = &xnetif[0];
 #endif
 
-    if((pxNetworkParams == NULL) || (pxNetworkParams->pcSSID == NULL) || (pxNetworkParams->pcPassword == NULL))
+    if((pxNetworkParams == NULL) || (pxNetworkParams->ucSSID == NULL) || (pxNetworkParams->xPassword.xWPA.cPassphrase == NULL))
     	return eWiFiFailure;
 
-    if((strlen((char*)pxNetworkParams->pcSSID) > wificonfigMAX_SSID_LEN) || (strlen((char*)pxNetworkParams->pcPassword) > wificonfigMAX_PASSPHRASE_LEN))
+    if((pxNetworkParams->ucSSIDLength > wificonfigMAX_SSID_LEN) || pxNetworkParams->xPassword.xWPA.ucLength > wificonfigMAX_PASSPHRASE_LEN)
     	return eWiFiFailure;
 
     if( (wifi_mode != RTW_MODE_AP) ){
         WIFI_SetMode(eWiFiModeAP);
     }
-    if((ret = wifi_start_ap((char*)pxNetworkParams->pcSSID, prvConvertSecurityAbstractedToRTW(pxNetworkParams->xSecurity),
-                                            (char*)pxNetworkParams->pcPassword, strlen((char*)pxNetworkParams->pcSSID), strlen((char*)pxNetworkParams->pcPassword),
-                                            pxNetworkParams->cChannel) )< 0) {
+    if((ret = wifi_start_ap((char*)pxNetworkParams->ucSSID, prvConvertSecurityAbstractedToRTW(pxNetworkParams->xSecurity),
+                                            (char*)pxNetworkParams->xPassword.xWPA.cPassphrase, pxNetworkParams->ucSSIDLength, pxNetworkParams->xPassword.xWPA.ucLength,
+                                            pxNetworkParams->ucChannel) )< 0) {
         printf("\n\rERROR: Operation failed!");
         return eWiFiFailure;
     }
@@ -481,8 +506,8 @@ WIFIReturnCode_t WIFI_ConfigureAP( const WIFINetworkParams_t * const pxNetworkPa
         char essid[33];
         int timeout = 20;
         if(wext_get_ssid(WLAN0_NAME, (unsigned char *) essid) > 0) {
-            if(strncmp((const char *) essid, (const char *)pxNetworkParams->pcSSID, pxNetworkParams->ucSSIDLength) == 0) {
-                printf("\n\r%s started\n", pxNetworkParams->pcSSID);
+            if(strncmp((const char *) essid, (const char *)pxNetworkParams->ucSSID, pxNetworkParams->ucSSIDLength) == 0) {
+                printf("\n\r%s started\n", pxNetworkParams->ucSSID);
                 break;
             }
         }
@@ -523,16 +548,39 @@ WIFIReturnCode_t WIFI_GetPMMode( WIFIPMMode_t * pxPMModeType,
 }
 /*-----------------------------------------------------------*/
 
-BaseType_t WIFI_IsConnected(void)
+BaseType_t WIFI_IsConnected( const WIFINetworkParams_t * pxNetworkParams )
 {
     if (wifi_is_connected_to_ap() == RTW_SUCCESS)
         return pdTRUE;
 	return pdFALSE;
 }
+/*-----------------------------------------------------------*/
 
-WIFIReturnCode_t WIFI_RegisterNetworkStateChangeEventCallback( IotNetworkStateChangeEventCallback_t xCallback  )
+WIFIReturnCode_t WIFI_RegisterEvent( WIFIEventType_t xEventType,
+                                     WIFIEventHandler_t xHandler )
 {
-	xEventCallback = xCallback;
-	return eWiFiSuccess;
+    WIFIReturnCode_t xWiFiRet;
+
+    switch( xEventType )
+    {
+        case eWiFiEventIPReady:
+        case eWiFiEventDisconnected:
+            xWifiEventHandlers[ xEventType ] = xHandler;
+            xWiFiRet = eWiFiSuccess;
+            break;
+        default:
+            xWiFiRet = eWiFiNotSupported;
+            break;
+    }
+
+
+    return xWiFiRet;
 }
+/*-----------------------------------------------------------*/
+
+//WIFIReturnCode_t WIFI_RegisterNetworkStateChangeEventCallback( IotNetworkStateChangeEventCallback_t xCallback  )
+//{
+//	xEventCallback = xCallback;
+//	return eWiFiSuccess;
+//}
 
