@@ -1,6 +1,6 @@
 /*
- * FreeRTOS Platform V1.1.3
- * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * FreeRTOS Platform V1.1.2
+ * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -27,8 +27,6 @@
  * @file iot_test_platform_threads.c
  * @brief Tests for the functions in iot_threads.h
  */
-#include "FreeRTOS.h"
-#include "task.h"
 
 #include "iot_config.h"
 
@@ -38,6 +36,7 @@
 #include "unity_fixture.h"
 
 #include "platform/iot_threads.h"
+#include "task.h"
 
 /*-----------------------------------------------------------*/
 
@@ -110,7 +109,6 @@ TEST( UTIL_Platform_Threads, IotThreads_CreateDetachedThread )
     }
 
     TEST_ASSERT_EQUAL( 4321, attrData );
-    attrData = 1234;
 }
 
 /*-----------------------------------------------------------*/
@@ -138,10 +136,11 @@ TEST( UTIL_Platform_Threads, IotThreads_CreateDetachedThread )
         }
 
         TEST_ASSERT_EQUAL( 0, attrData );
+        printf( "Expected Pri = 0, actual = %d\r\n", ( int ) attrData );
         attrData = -1;
 
-        /* Create thread with max priority - 1*/
-        Iot_CreateDetachedThread( threadPriorityTestFunction, &attrData, ( configMAX_PRIORITIES - 1U ), 3072 );
+        /* Create thread with priority 5 */
+        Iot_CreateDetachedThread( threadPriorityTestFunction, &attrData, 5, 3072 );
 
         /* Wait for the thread to complete before checking result*/
         while( attrData == -1 )
@@ -149,8 +148,20 @@ TEST( UTIL_Platform_Threads, IotThreads_CreateDetachedThread )
             vTaskDelay( 1 );
         }
 
-        TEST_ASSERT_EQUAL( ( configMAX_PRIORITIES - 1U ), attrData );
+        printf( "Expected Pri = 5, actual = %d\r\n", ( int ) attrData );
+        TEST_ASSERT_EQUAL( 5, attrData );
         attrData = -1;
+
+        /* Create thread with priority 5 */
+        Iot_CreateDetachedThread( threadPriorityTestFunction, &attrData, 7, 3072 );
+
+        /* Wait for the thread to complete before checking result*/
+        while( attrData == -1 )
+        {
+            vTaskDelay( 1 );
+        }
+
+        printf( "Expected Pri = 7, actual = %d\r\n", ( int ) attrData );
     }
 #endif /* if ( INCLUDE_uxTaskPriorityGet == 1 ) */
 

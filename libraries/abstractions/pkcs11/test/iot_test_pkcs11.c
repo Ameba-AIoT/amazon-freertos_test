@@ -1871,7 +1871,6 @@ TEST( Full_PKCS11_EC, AFQP_Sign )
         mbedtls_mpi_free( &xS );
     }
 
-    vPortFree( pxPublicKey );
     mbedtls_pk_free( &xEcdsaContext );
 }
 

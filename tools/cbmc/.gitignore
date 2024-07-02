@@ -1,0 +1,8 @@
+cbmc.txt
+property.xml
+coverage.xml
+*.goto
+TAGS-*
+html
+
+.litani_cache_dir

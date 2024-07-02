@@ -1,6 +1,6 @@
 /*
  * FreeRTOS Common IO V0.1.3
- * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -115,9 +115,8 @@ static void prvAdcChCallback( uint16_t * pusConvertedData,
 {
     testIotAdcTestUserContext_t * pxUserCntx = ( testIotAdcTestUserContext_t * ) pvUserContext;
     BaseType_t xHigherPriorityTaskWoken;
-    uint8_t i;
 
-    for( i = 0; i < pxUserCntx->ucDataSize; i++ )
+    for( uint8_t i = 0; i < pxUserCntx->ucDataSize; i++ )
     {
         TEST_ASSERT_NOT_EQUAL( 0, pusConvertedData[ i ] );
     }
@@ -255,7 +254,6 @@ TEST( TEST_IOT_ADC, AFQP_IotAdcReadSample )
     IotAdcHandle_t xAdcHandle;
     int32_t lRetVal;
     uint16_t usSample;
-    int8_t i;
 
     /* make sure ADC channel list has been configured */
     TEST_ASSERT_NOT_EQUAL( NULL, puctestIotAdcChList );
@@ -266,7 +264,7 @@ TEST( TEST_IOT_ADC, AFQP_IotAdcReadSample )
     if( TEST_PROTECT() )
     {
         /* read sample from ADC channels */
-        for( i = 0; i < uctestIotAdcChListLen; i++ )
+        for( int i = 0; i < uctestIotAdcChListLen; i++ )
         {
             lRetVal = iot_adc_read_sample( xAdcHandle, puctestIotAdcChList[ i ], &usSample );
             TEST_ASSERT_EQUAL( IOT_ADC_SUCCESS, lRetVal );
@@ -318,7 +316,6 @@ TEST( TEST_IOT_ADC, AFQP_IotAdcChBuffer )
     uint16_t usChDataBuf[ testIotADC_CH_DATA_BUF_LEN ];
     uint8_t ucCh;
     int32_t lRetVal;
-    int8_t i;
 
     TEST_ASSERT_NOT_EQUAL( NULL, puctestIotAdcChList );
 
@@ -328,7 +325,7 @@ TEST( TEST_IOT_ADC, AFQP_IotAdcChBuffer )
 
     if( TEST_PROTECT() )
     {
-        for( i = 0; i < uctestIotAdcChListLen; i++ )
+        for( int i = 0; i < uctestIotAdcChListLen; i++ )
         {
             ucCh = puctestIotAdcChList[ i ];
 
@@ -378,7 +375,6 @@ TEST( TEST_IOT_ADC, AFQP_IotAdcSetChain )
     uint16_t usChainBuf[ 16 ];
     uint8_t ucCh;
     int32_t lRetVal;
-    int8_t i;
 
     /* open ADC module for operation */
     xUserCntx.xAdcHandle = iot_adc_open( uctestIotAdcInstance );
@@ -398,7 +394,7 @@ TEST( TEST_IOT_ADC, AFQP_IotAdcSetChain )
         xAdcChain.ucBufLen = uctestIotAdcChListLen * 2;
         xAdcChain.usChainMask = 0;
 
-        for( i = 0; i < uctestIotAdcChListLen; i++ )
+        for( int i = 0; i < uctestIotAdcChListLen; i++ )
         {
             xAdcChain.usChainMask |= 1 << puctestIotAdcChList[ i ];
         }
@@ -448,7 +444,6 @@ TEST( TEST_IOT_ADC, AFQP_IotAdcOperation )
     testIotAdcTestUserContext_t xUserCntx;
     uint8_t ucCh;
     int32_t lRetVal;
-    int8_t i;
 
     TEST_ASSERT_NOT_EQUAL( NULL, puctestIotAdcChList );
 
@@ -458,7 +453,7 @@ TEST( TEST_IOT_ADC, AFQP_IotAdcOperation )
 
     if( TEST_PROTECT() )
     {
-        for( i = 0; i < uctestIotAdcChListLen; i++ )
+        for( int i = 0; i < uctestIotAdcChListLen; i++ )
         {
             ucCh = puctestIotAdcChList[ i ];
 
@@ -575,7 +570,6 @@ TEST( TEST_IOT_ADC, AFQP_IotAdcSetChainFuzzy )
     uint16_t usChainBuf[ 16 ];
     uint8_t ucCh;
     int32_t lRetVal;
-    int8_t i;
 
     /* open ADC module for operation */
     xUserCntx.xAdcHandle = iot_adc_open( uctestIotAdcInstance );
@@ -601,7 +595,7 @@ TEST( TEST_IOT_ADC, AFQP_IotAdcSetChainFuzzy )
         {
             TEST_ASSERT_EQUAL( IOT_ADC_INVALID_VALUE, lRetVal );
 
-            for( i = 0; i < uctestIotAdcChListLen; i++ )
+            for( int i = 0; i < uctestIotAdcChListLen; i++ )
             {
                 xAdcChain.usChainMask |= 1 << puctestIotAdcChList[ i ];
             }

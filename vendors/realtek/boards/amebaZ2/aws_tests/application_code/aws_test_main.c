@@ -42,16 +42,16 @@
 #include "iot_logging_task.h"
 #include "iot_wifi.h"
 #include "aws_clientcredential.h"
-//#include "aws_dev_mode_key_provisioning.h"
+#include "aws_dev_mode_key_provisioning.h"
 
 int errno = 0;
 
 /* Logging Task Defines. */
 #define mainLOGGING_MESSAGE_QUEUE_LENGTH    ( 15 )
-#define mainLOGGING_TASK_STACK_SIZE         ( configMINIMAL_STACK_SIZE * 4 )
+#define mainLOGGING_TASK_STACK_SIZE         ( configMINIMAL_STACK_SIZE * 8 )
 
 /* Unit test defines. */
-#define mainTEST_RUNNER_TASK_STACK_SIZE     ( configMINIMAL_STACK_SIZE * 8 )
+#define mainTEST_RUNNER_TASK_STACK_SIZE     ( configMINIMAL_STACK_SIZE * 16 )
 
 /* The task delay for allowing the lower priority logging task to print out Wi-Fi
  * failure status before blocking indefinitely. */
@@ -185,7 +185,6 @@ static void prvMiscInitialization( void )
     /* FIX ME: Perform any hardware initializations, that don't require the RTOS to be
      * running, here.
      */
-    configPRINT_STRING("Test Message");
 }
 /*-----------------------------------------------------------*/
 
@@ -205,8 +204,8 @@ void vApplicationDaemonTaskStartupHook( void )
             do
             {
                 prvWifiConnect();
-                vTaskDelay( 5000 );
-            }while(WIFI_IsConnected(NULL)!=TRUE);
+                vTaskDelay( 50000 );
+            }while(WIFI_IsConnected()!=TRUE);
 
             /* Provision the device with AWS certificate and private key. */
             vDevModeKeyProvisioning();
@@ -231,7 +230,7 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
      * unit tests and after MQTT, Bufferpool, and Secure Sockets libraries have been
      * imported into the project. If you are not using Ethernet see the
      * vApplicationDaemonTaskStartupHook function. */
-//    #if 0
+    #if 0
     static BaseType_t xTasksAlreadyCreated = pdFALSE;
 
     /* If the network has just come up...*/
@@ -249,7 +248,7 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
             xTasksAlreadyCreated = pdTRUE;
         }
     }
-//    #endif /* if 0 */
+    #endif /* if 0 */
 }
 #endif
 
@@ -259,9 +258,7 @@ void prvWifiConnect( void )
 {
     WIFINetworkParams_t xNetworkParams;
     WIFIReturnCode_t xWifiStatus;
-    //uint8_t ucTempIp[4] = { 0 };
-    WIFIIPConfiguration_t xIPInfo;
-    uint8_t *ucTempIp;
+    uint8_t ucTempIp[4] = { 0 };
 
     xWifiStatus = WIFI_On();
 
@@ -283,22 +280,20 @@ void prvWifiConnect( void )
     }
 
     /* Setup parameters. */
-    memcpy( xNetworkParams.ucSSID, clientcredentialWIFI_SSID, sizeof( clientcredentialWIFI_SSID ) ); // xNetworkParams.pcSSID = clientcredentialWIFI_SSID;
+    xNetworkParams.pcSSID = clientcredentialWIFI_SSID;
     xNetworkParams.ucSSIDLength = sizeof( clientcredentialWIFI_SSID );
-    memcpy( xNetworkParams.xPassword.xWPA.cPassphrase, clientcredentialWIFI_PASSWORD, sizeof( clientcredentialWIFI_PASSWORD )); // xNetworkParams.pcPassword = clientcredentialWIFI_PASSWORD;
-    xNetworkParams.xPassword.xWPA.ucLength = sizeof( clientcredentialWIFI_PASSWORD );
+    xNetworkParams.pcPassword = clientcredentialWIFI_PASSWORD;
+    xNetworkParams.ucPasswordLength = sizeof( clientcredentialWIFI_PASSWORD );
     xNetworkParams.xSecurity = clientcredentialWIFI_SECURITY;
-    xNetworkParams.ucChannel = 0;
+    xNetworkParams.cChannel = 0;
 
     xWifiStatus = WIFI_ConnectAP( &( xNetworkParams ) );
 
     if( xWifiStatus == eWiFiSuccess )
     {
         configPRINTF( ( "Wi-Fi Connected to AP. Creating tasks which use network...\r\n" ) );
-        
-        xWifiStatus = WIFI_GetIPInfo( &xIPInfo );
-        ucTempIp = ( uint8_t * ) ( &xIPInfo.xIPAddress.ulAddress[0] );
-        
+
+        xWifiStatus = WIFI_GetIP( ucTempIp );
         if ( eWiFiSuccess == xWifiStatus )
         {
             configPRINTF( ( "IP Address acquired %d.%d.%d.%d\r\n",
@@ -393,13 +388,12 @@ void vApplicationGetTimerTaskMemory( StaticTask_t ** ppxTimerTaskTCBBuffer,
  * configTOTAL_HEAP_SIZE configuration constant in FreeRTOSConfig.h.
  *
  */
-#if 0
+#ifdef AMAZON_FREERTOS_ENABLE_UNIT_TESTS
 void vApplicationMallocFailedHook()
 {
     /* The TCP tests will test behavior when the entire heap is allocated. In
      * order to avoid interfering with those tests, this function does nothing. */
 }
-#endif
 
 /**
  * @brief Loop forever if stack overflow is detected.
@@ -412,7 +406,6 @@ void vApplicationMallocFailedHook()
  * has occurred.
  *
  */
-#if 0
 void vApplicationStackOverflowHook( TaskHandle_t xTask,
                                     char * pcTaskName )
 {
@@ -424,7 +417,6 @@ void vApplicationStackOverflowHook( TaskHandle_t xTask,
     }
 }
 #endif
-
 /*-----------------------------------------------------------*/
 
 /**
@@ -487,8 +479,9 @@ void vApplicationIdleHook( void )
  * @brief User defined assertion call. This function is plugged into configASSERT.
  * See FreeRTOSConfig.h to define configASSERT to something different.
  */
-void vAssertCalled(uint32_t ulLine,
-	const char * pcFile)
+#if 0// hank
+void vAssertCalled(const char * pcFile,
+	uint32_t ulLine)
 {
     /* FIX ME. If necessary, update to applicable assertion routine actions. */
 
@@ -514,6 +507,7 @@ void vAssertCalled(uint32_t ulLine,
 	}
 	taskENABLE_INTERRUPTS();
 }
+#endif
 /*-----------------------------------------------------------*/
 
 /**

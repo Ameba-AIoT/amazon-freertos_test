@@ -1,6 +1,6 @@
 /*
- * FreeRTOS V202107.00
- * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * FreeRTOS V202012.00
+ * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -85,19 +85,6 @@ typedef enum
     ReportStatusAccepted,
     ReportStatusRejected
 } ReportStatus_t;
-
-/**
- * @brief Each compilation unit that consumes the NetworkContext must define it.
- * It should contain a single pointer to the type of your desired transport.
- * When using multiple transports in the same compilation unit, define this pointer as void *.
- *
- * @note Transport stacks are defined in amazon-freertos/libraries/abstractions/transport/secure_sockets/transport_secure_sockets.h.
- */
-struct NetworkContext
-{
-    SecureSocketsTransportParams_t * pParams;
-};
-
 /*-----------------------------------------------------------*/
 
 /**
@@ -179,8 +166,6 @@ static void publishCallback( MQTTContext_t * pMqttContext,
 /**
  * @brief Collect all the metrics to be sent in the device defender report.
  *
- * On success, caller is responsible for freeing deviceMetrics.pTaskStatusArray.
- *
  * @return pdPASS if all the metrics are successfully collected;
  * pdFAIL otherwise.
  */
@@ -194,7 +179,7 @@ static BaseType_t collectDeviceMetrics( void );
  * @return pdPASS if the report is generated successfully;
  * pdFAIL otherwise.
  */
-static BaseType_t generateDeviceMetricsReport( size_t * pOutReportLength );
+static BaseType_t generateDeviceMetricsReport( uint32_t * pOutReportLength );
 
 /**
  * @brief Subscribe to the device defender topics.
@@ -229,11 +214,11 @@ static BaseType_t unsubscribeFromDefenderTopics( MQTTContext_t * pMqttContext );
  * false otherwise.
  */
 static bool validateDefenderResponse( const char * defenderResponse,
-                                      size_t defenderResponseLength );
+                                      uint32_t defenderResponseLength );
 /*-----------------------------------------------------------*/
 
 static bool validateDefenderResponse( const char * defenderResponse,
-                                      size_t defenderResponseLength )
+                                      uint32_t defenderResponseLength )
 {
     bool status = false;
     JSONStatus_t jsonResult = JSONSuccess;
@@ -253,7 +238,7 @@ static bool validateDefenderResponse( const char * defenderResponse,
 
     if( jsonResult == JSONSuccess )
     {
-        /* Search for the reportId key in the response. */
+        /* Search the reportId key in the response. */
         jsonResult = JSON_Search( ( char * ) defenderResponse,
                                   defenderResponseLength,
                                   "reportId",
@@ -278,18 +263,17 @@ static bool validateDefenderResponse( const char * defenderResponse,
          * published report? */
         if( reportIdInResponse == reportId )
         {
-            LogInfo( ( "A valid response with reportId %lu received from the "
-                       "AWS IoT Device Defender Service.",
-                       ( unsigned long ) reportId ) );
+            LogInfo( ( "A valid response with reportId %u received from the "
+                       "AWS IoT Device Defender Service.", reportId ) );
             status = true;
         }
         else
         {
             LogError( ( "Unexpected reportId found in the response from the AWS"
-                        "IoT Device Defender Service. Expected: %lu, Found: %lu, "
+                        "IoT Device Defender Service. Expected: %u, Found: %u, "
                         "Complete Response: %.*s.",
-                        ( unsigned long ) reportIdInResponse,
-                        ( unsigned long ) reportId,
+                        reportIdInResponse,
+                        reportId,
                         ( int ) defenderResponseLength,
                         defenderResponse ) );
         }
@@ -377,11 +361,7 @@ static BaseType_t collectDeviceMetrics( void )
 {
     BaseType_t status = pdFAIL;
     MetricsCollectorStatus_t metricsCollectorStatus;
-    size_t numOpenTcpPorts, numOpenUdpPorts, numEstablishedConnections;
-    UBaseType_t tasksWritten = 0U;
-    TaskStatus_t taskStatus = { 0 };
-    TaskStatus_t * pTaskStatusArray = NULL;
-    UBaseType_t numTasksRunning;
+    uint32_t numOpenTcpPorts, numOpenUdpPorts, numEstablishedConnections;
 
     /* Collect bytes and packets sent and received. */
     metricsCollectorStatus = GetNetworkStats( &( networkStats ) );
@@ -434,54 +414,6 @@ static BaseType_t collectDeviceMetrics( void )
         }
     }
 
-    if( metricsCollectorStatus == MetricsCollectorSuccess )
-    {
-        /* Get task count */
-        numTasksRunning = uxTaskGetNumberOfTasks();
-
-        /* Allocate pTaskStatusArray */
-        pTaskStatusArray = pvPortMalloc( numTasksRunning * sizeof( TaskStatus_t ) );
-
-        if( pTaskStatusArray == NULL )
-        {
-            LogError( ( "Cannot allocate memory for pTaskStatusArray array: pvPortMalloc() failed." ) );
-            metricsCollectorStatus = MetricsCollectorCollectionFailed;
-        }
-    }
-
-    /* Collect custom metrics from the system to send to AWS IoT Device Defender.
-     * This demo sends this task's stack high water mark as a "number" type
-     * custom metric and the current task ids as a "list of numbers" type custom
-     * metric. */
-    if( metricsCollectorStatus == MetricsCollectorSuccess )
-    {
-        /* Get the current task's status information. The usStackHighWaterMark
-         * field of the task status will be included in the report as a "number"
-         * custom metric. */
-        vTaskGetInfo(
-            /* NULL has the function query this task. */
-            NULL,
-            &taskStatus,
-            /* Include the stack high water mark value. */
-            pdTRUE,
-            /* Don't include the task state in the TaskStatus_t structure. */
-            0 );
-
-        /* Get the task status information for all running tasks. The task IDs
-         * of each task is then extracted to include in the report as a "list of
-         * numbers" custom metric */
-        tasksWritten = uxTaskGetSystemState( pTaskStatusArray, numTasksRunning, NULL );
-
-        if( tasksWritten == 0 )
-        {
-            /* If 0 is returned, the buffer was too small. This line is reached
-             * when we hit the race condition where tasks have been added since
-             * we got the result of uxTaskGetNumberOfTasks() */
-            metricsCollectorStatus = MetricsCollectorCollectionFailed;
-            LogError( ( "Failed to collect task IDs. uxTaskGetSystemState() failed due to insufficient buffer space." ) );
-        }
-    }
-
     /* Populate device metrics. */
     if( metricsCollectorStatus == MetricsCollectorSuccess )
     {
@@ -493,18 +425,6 @@ static BaseType_t collectDeviceMetrics( void )
         deviceMetrics.openUdpPortsArrayLength = numOpenUdpPorts;
         deviceMetrics.pEstablishedConnectionsArray = &( establishedConnections[ 0 ] );
         deviceMetrics.establishedConnectionsArrayLength = numEstablishedConnections;
-        deviceMetrics.stackHighWaterMark = taskStatus.usStackHighWaterMark;
-        deviceMetrics.pTaskStatusArray = pTaskStatusArray;
-        deviceMetrics.taskStatusArrayLength = tasksWritten;
-    }
-    else
-    {
-        /* Free pTaskStatusArray if we allocated it but did not add it to the
-         * deviceMetrics stuct. */
-        if( pTaskStatusArray != NULL )
-        {
-            vPortFree( pTaskStatusArray );
-        }
     }
 
     return status;
@@ -549,7 +469,7 @@ static BaseType_t unsubscribeFromDefenderTopics( MQTTContext_t * pMqttContext )
 }
 /*-----------------------------------------------------------*/
 
-static BaseType_t generateDeviceMetricsReport( size_t * pOutReportLength )
+static BaseType_t generateDeviceMetricsReport( uint32_t * pOutReportLength )
 {
     BaseType_t status = pdFAIL;
     ReportBuilderStatus_t reportBuilderStatus;
@@ -572,7 +492,7 @@ static BaseType_t generateDeviceMetricsReport( size_t * pOutReportLength )
     else
     {
         LogDebug( ( "Generated Report: %.*s.",
-                    ( int ) ( *pOutReportLength ),
+                    *pOutReportLength,
                     &( deviceMetricsJsonReport[ 0 ] ) ) );
         status = pdPASS;
     }
@@ -600,8 +520,7 @@ int RunDeviceDefenderDemo( bool awsIotMqttMode,
                            const void * pNetworkInterface )
 {
     BaseType_t demoStatus = pdFAIL;
-    size_t reportLength = 0U, i;
-    bool mqttSessionEstablished = false;
+    uint32_t reportLength = 0UL, i, mqttSessionEstablished = 0UL;
     UBaseType_t demoRunCount = 0;
     BaseType_t retryDemoLoop = pdFALSE;
 
@@ -642,7 +561,7 @@ int RunDeviceDefenderDemo( bool awsIotMqttMode,
         }
         else
         {
-            mqttSessionEstablished = true;
+            mqttSessionEstablished = 1;
         }
 
         if( demoStatus == pdPASS )
@@ -671,13 +590,6 @@ int RunDeviceDefenderDemo( bool awsIotMqttMode,
         {
             LogInfo( ( "Generating device defender report..." ) );
             demoStatus = generateDeviceMetricsReport( &( reportLength ) );
-
-            /* Free the allocated array in deviceMetrics struct which is not
-             * used anymore after generateDeviceMetricsReport(). This code is
-             * only reached when collectDeviceMetrics succeeded, so
-             * deviceMetrics.pTaskStatusArray is a valid allocation that needs
-             * to be freed. */
-            vPortFree( deviceMetrics.pTaskStatusArray );
 
             if( demoStatus == pdFAIL )
             {
@@ -727,7 +639,7 @@ int RunDeviceDefenderDemo( bool awsIotMqttMode,
          * protocol spec, it is okay to send UNSUBSCRIBE even if no corresponding
          * subscription exists on the broker. Therefore, it is okay to attempt
          * unsubscribe even if one more subscribe failed earlier. */
-        if( mqttSessionEstablished )
+        if( mqttSessionEstablished == 1 )
         {
             LogInfo( ( "Unsubscribing from defender topics..." ) );
             demoStatus = unsubscribeFromDefenderTopics( &mqttContext );
@@ -763,7 +675,7 @@ int RunDeviceDefenderDemo( bool awsIotMqttMode,
 
                 /* Clear the flag indicating successful MQTT session establishment
                  * before attempting a retry. */
-                mqttSessionEstablished = false;
+                mqttSessionEstablished = 0;
 
                 LogInfo( ( "A short delay before the next demo iteration." ) );
                 vTaskDelay( DELAY_BETWEEEN_DEMO_ATTEMPTS_TICKS );

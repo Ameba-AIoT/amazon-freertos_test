@@ -1,6 +1,6 @@
 /*
- * FreeRTOS V202107.00
- * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * FreeRTOS V202012.00
+ * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -34,71 +34,35 @@
  * for BLE GAP Pairing.
  */
 
-#include <string.h>
-
-
 /* The config header is always included first. */
 #include "iot_config.h"
-#include "iot_ble_config.h"
 
+#include <string.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 #include "iot_ble.h"
-#include "iot_ble_numericComparison.h"
+#include "iot_ble_config.h"
+#include <iot_ble_numericComparison.h>
 
-
-/**
- * @brief Stack size for the numeric comparsion task.
- * Task waits on user input for BLE passkey confirmation by calling
- * board specific uart read. It then calls BLE API to confirm wether the
- * passkeys are accepted or rejected.
- */
-#define IOT_BLE_NUMERIC_COMPARISON_TASK_STACK_SIZE    ( 2048 )
-
-/**
- * @brief Task priority for the numeric comparsion task.
- * Task waits on user input for BLE passkey confirmation by calling
- * board specific uart read. It then calls BLE API to confirm wether the
- * passkeys are accepted or rejected.
- */
-#define IOT_BLE_NUMERIC_COMPARISON_TASK_PRIORITY      ( tskIDLE_PRIORITY )
-
-/**
- * @brief Size of the numeric comaprison queue.
- * Setting it to 1 as only one message is allowed anytime.
- */
-#define IOT_BLE_NUMERIC_COMPARISON_QUEUE_SIZE         ( 1 )
-
-/**
- * @brief Maximum number of tries for confirmation.
- */
-#define IOT_BLE_MAX_NUMERIC_COMPARISON_TRIES          ( 5 )
-
-/**
- * @brief Structure defines each element of Numeric comparison queue.
- */
 typedef struct
 {
     uint32_t ulPassKey;
     BTBdaddr_t xAddress;
 } BLEPassKeyConfirm_t;
 
-/**
- * @brief Handle for numeric comparison queue.
- */
-static QueueHandle_t xNumericComparisonQueue = NULL;
+QueueHandle_t xNumericComparisonQueue = NULL;
 
-void vDemoBLEGAPPairingStateChangedCb( BTStatus_t xStatus,
-                                       BTBdaddr_t * pxRemoteBdAddr,
-                                       BTBondState_t bondState,
-                                       BTSecurityLevel_t xSecurityLevel,
-                                       BTAuthFailureReason_t xReason )
+void BLEGAPPairingStateChangedCb( BTStatus_t xStatus,
+                                  BTBdaddr_t * pxRemoteBdAddr,
+                                  BTBondState_t bondState,
+                                  BTSecurityLevel_t xSecurityLevel,
+                                  BTAuthFailureReason_t xReason )
 {
 }
 
-void vDemoBLENumericComparisonCb( BTBdaddr_t * pxRemoteBdAddr,
-                                  uint32_t ulPassKey )
+void BLENumericComparisonCb( BTBdaddr_t * pxRemoteBdAddr,
+                             uint32_t ulPassKey )
 {
     BLEPassKeyConfirm_t xPassKeyConfirm;
 
@@ -111,62 +75,46 @@ void vDemoBLENumericComparisonCb( BTBdaddr_t * pxRemoteBdAddr,
     }
 }
 
-static void prvNumericComparisonTask( void * pvParameters )
+void userInputTask( void * pvParameters )
 {
-    char userInput;
+    INPUTMessage_t xINPUTmessage;
     BLEPassKeyConfirm_t xPassKeyConfirm;
     TickType_t xAuthTimeout = pdMS_TO_TICKS( IOT_BLE_NUMERIC_COMPARISON_TIMEOUT_SEC * 1000 );
-    uint32_t ulTries;
 
     for( ; ; )
     {
         if( xQueueReceive( xNumericComparisonQueue, ( void * ) &xPassKeyConfirm, portMAX_DELAY ) )
         {
             configPRINTF( ( "Numeric comparison:%ld\n", xPassKeyConfirm.ulPassKey ) );
-            configPRINTF( ( "Press 'y' to confirm, 'n' to reject\n" ) );
+            configPRINTF( ( "Press 'y' to confirm\n" ) );
 
-            for( ulTries = 0; ulTries < IOT_BLE_MAX_NUMERIC_COMPARISON_TRIES; ulTries++ )
+            /* Waiting for UART event. */
+            if( getUserMessage( &xINPUTmessage, xAuthTimeout ) == pdTRUE )
             {
-                /* Waiting for UART event. */
-                if( xPortGetUserInput( ( uint8_t * ) &userInput, 1, xAuthTimeout ) > 0 )
+                if( ( xINPUTmessage.pcData[ 0 ] == 'y' ) || ( xINPUTmessage.pcData[ 0 ] == 'Y' ) )
                 {
-                    if( ( userInput == 'y' ) || ( userInput == 'Y' ) )
-                    {
-                        configPRINTF( ( "Key accepted\n" ) );
-                        IotBle_ConfirmNumericComparisonKeys( &xPassKeyConfirm.xAddress, true );
-                        break;
-                    }
-                    else if( ( userInput == 'n' ) || ( userInput == 'N' ) )
-                    {
-                        configPRINTF( ( "Key Rejected\n" ) );
-                        IotBle_ConfirmNumericComparisonKeys( &xPassKeyConfirm.xAddress, false );
-                        break;
-                    }
-                    else
-                    {
-                        configPRINTF( ( "Wrong key pressed.\n" ) );
-                        configPRINTF( ( "Press 'y' to confirm, 'n' to reject\n" ) );
-                    }
+                    configPRINTF( ( "Key accepted\n" ) );
+                    IotBle_ConfirmNumericComparisonKeys( &xPassKeyConfirm.xAddress, true );
                 }
                 else
                 {
-                    configPRINTF( ( "Error reading user input for numeric comparison\r\n" ) );
-                    break;
+                    configPRINTF( ( "Key Rejected\n" ) );
+                    IotBle_ConfirmNumericComparisonKeys( &xPassKeyConfirm.xAddress, false );
                 }
+
+                vPortFree( xINPUTmessage.pcData );
             }
         }
     }
+
+    vTaskDelete( NULL );
 }
 
-void vDemoBLENumericComparisonInit( void )
+void NumericComparisonInit( void )
 {
-    /* Create a queue that will pass in the code to the UART task and wait validation from the user. */
-    xNumericComparisonQueue = xQueueCreate( IOT_BLE_NUMERIC_COMPARISON_QUEUE_SIZE, sizeof( BLEPassKeyConfirm_t ) );
-
-    xTaskCreate( prvNumericComparisonTask,
-                 "NumericComparisonTask",
-                 IOT_BLE_NUMERIC_COMPARISON_TASK_STACK_SIZE,
-                 NULL,
-                 IOT_BLE_NUMERIC_COMPARISON_TASK_PRIORITY,
-                 NULL );
+    #if ( IOT_BLE_ENABLE_NUMERIC_COMPARISON == 1 )
+        /* Create a queue that will pass in the code to the UART task and wait validation from the user. */
+        xNumericComparisonQueue = xQueueCreate( 1, sizeof( BLEPassKeyConfirm_t ) );
+        xTaskCreate( userInputTask, "InputTask", 2048, NULL, tskIDLE_PRIORITY, NULL );
+    #endif
 }

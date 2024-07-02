@@ -331,11 +331,6 @@ int32_t SOCKETS_Connect( Socket_t xSocket,
 
     ctx = ( ss_ctx_t * )xSocket;
 
-    if( NULL == ctx )
-    {
-        return SOCKETS_SOCKET_ERROR;
-    }
-
     if( 0 <= ctx->ip_socket )
     {
         struct sockaddr_in sa_addr = { 0 };
@@ -413,11 +408,6 @@ int32_t SOCKETS_Recv( Socket_t xSocket,
 {
     ss_ctx_t * ctx = ( ss_ctx_t * )xSocket;
 
-    if( NULL == ctx )
-    {
-        return SOCKETS_SOCKET_ERROR;
-    }
-
     if( SOCKETS_INVALID_SOCKET == xSocket )
     {
         return SOCKETS_SOCKET_ERROR;
@@ -471,17 +461,6 @@ int32_t SOCKETS_Send( Socket_t xSocket,
     }
 
     ctx            = ( ss_ctx_t * )xSocket;
-
-    if( NULL == ctx )
-    {
-        return SOCKETS_SOCKET_ERROR;
-    }
-
-    if( ( ctx->status & SS_STATUS_CONNECTED ) != SS_STATUS_CONNECTED )
-    {
-        return SOCKETS_ENOTCONN;
-    }
-
     ctx->send_flag = ulFlags;
 
     if( 0 > ctx->ip_socket )
@@ -515,11 +494,6 @@ int32_t SOCKETS_Shutdown( Socket_t xSocket,
 
     ctx            = ( ss_ctx_t * )xSocket;
 
-    if( NULL == ctx )
-    {
-        return SOCKETS_SOCKET_ERROR;
-    }
-
     if( 0 > ctx->ip_socket )
     {
         return SOCKETS_SOCKET_ERROR;
@@ -550,11 +524,6 @@ int32_t SOCKETS_Close( Socket_t xSocket )
 
     ctx = ( ss_ctx_t * )xSocket;
 
-    if( NULL == ctx )
-    {
-        return SOCKETS_SOCKET_ERROR;
-    }
-
     /* Clean-up application protocol array. */
     if( NULL != ctx->ppcAlpnProtocols )
     {
@@ -580,14 +549,14 @@ int32_t SOCKETS_Close( Socket_t xSocket )
     {
         if( ctx->rx_handle != NULL )
         {
-        int   cnt = 0;
-        ctx->state = SST_RX_CLOSING;
+	        int   cnt = 0;
+	        ctx->state = SST_RX_CLOSING;
 
-        while ((ctx->state != SST_RX_CLOSED) && (cnt<30))
-        {
-            cnt++;
-            vTaskDelay( 10 );
-        }
+	        while ((ctx->state != SST_RX_CLOSED) && (cnt<30))
+	        {
+	            cnt++;
+	            vTaskDelay( 10 );
+	        }
         }
 
         lwip_close( ctx->ip_socket );
@@ -631,11 +600,6 @@ int32_t SOCKETS_SetSockOpt( Socket_t xSocket,
 
     ctx            = ( ss_ctx_t * )xSocket;
 
-    if( NULL == ctx )
-    {
-        return SOCKETS_SOCKET_ERROR;
-    }
-
     if( 0 > ctx->ip_socket )
     {
         return SOCKETS_SOCKET_ERROR;
@@ -654,16 +618,16 @@ int32_t SOCKETS_SetSockOpt( Socket_t xSocket,
             tv.tv_sec  = TICK_TO_S ( ticks );
             tv.tv_usec = TICK_TO_US( ticks % configTICK_RATE_HZ );
 
-            lwip_setsockopt( ctx->ip_socket,     //ret = 
+            ret = lwip_setsockopt( ctx->ip_socket,
                                    SOL_SOCKET,
                                    lOptionName == SOCKETS_SO_RCVTIMEO ? SO_RCVTIMEO : SO_SNDTIMEO,
-                                   &ticks,    //( struct timeval * )&tv,
-                                   sizeof( ticks ) );   //sizeof( tv )
+                                   ( struct timeval * )&tv,
+                                   sizeof( tv ) );
 
-//            if (0 != ret)
-//            {
-//                return SOCKETS_EINVAL;
-//            }
+            if (0 != ret)
+            {
+                return SOCKETS_EINVAL;
+            }
 
             break;
         }
@@ -790,26 +754,24 @@ int32_t SOCKETS_SetSockOpt( Socket_t xSocket,
             }
             else
             {
-                memset( ctx->ppcAlpnProtocols,
-                        0x00,
-                        ctx->ulAlpnProtocolsCount * sizeof( char * ) );
+                ctx->ppcAlpnProtocols[
+                    ctx->ulAlpnProtocolsCount - 1 ] = NULL;
             }
 
             /* Copy each protocol string. */
             for( ulProtocol = 0; ( ulProtocol < ctx->ulAlpnProtocolsCount - 1 ) ; ulProtocol++ )
             {
-                xLength = strlen( (char *)&ppcAlpnIn[ ulProtocol ] );
+                xLength = strlen( ppcAlpnIn[ ulProtocol ] );
 
                 if( NULL == ( ctx->ppcAlpnProtocols[ ulProtocol ] =
                                   ( char * ) pvPortMalloc( 1 + xLength ) ) )
                 {
-                    ctx->ppcAlpnProtocols[ ulProtocol ] = NULL;
                     return SOCKETS_ENOMEM;
                 }
                 else
                 {
                     memcpy( ctx->ppcAlpnProtocols[ ulProtocol ],
-                            &ppcAlpnIn[ ulProtocol ],
+                            ppcAlpnIn[ ulProtocol ],
                             xLength );
                     ctx->ppcAlpnProtocols[ ulProtocol ][ xLength ] = '\0';
                 }

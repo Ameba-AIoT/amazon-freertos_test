@@ -1,6 +1,6 @@
 /*
  * FreeRTOS Common IO V0.1.3
- * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -67,7 +67,7 @@ int32_t ltestIotGpioPortInvalid = INT_MAX;
 
 /*
  * ustestIotGpioConfig is used for configuring GPIO test
- * user must set this variable for testing different GPIOs
+ * user must set this variable for testing differnt GPIOs
  *
  * default ustestIotGpioConfig = 0 means reading logic GPIO# 0
  *
@@ -416,9 +416,7 @@ TEST( TEST_IOT_GPIO, AFQP_IotGpioSpeed )
                 ulPerfCountFastDelta = 0xFFFFFFFF - ulPerfCount0 + ulPerfCount1 + 1;
             }
 
-            /* The count is a reference to how long the read takes
-             *  so when running faster the count should be smaller. */
-            TEST_ASSERT_GREATER_THAN( ulPerfCountFastDelta, ulPerfCountSlowDelta );
+            TEST_ASSERT_GREATER_THAN( ulPerfCountSlowDelta, ulPerfCountFastDelta );
         }
     }
 
@@ -601,15 +599,9 @@ static void testIotGpioInterrupt( IotGpioInterrupt_t eGpioInterrupt )
 
     if( eGpioInterrupt == eGpioInterruptNone )
     {
-        TEST_ASSERT_FALSE_MESSAGE( eGpioInterrupt == eGpioInterruptNone, "Port interrupt has to be enabled for testing." );
+        TEST_ASSERT_FALSE_MESSAGE( eGpioInterrupt == eGpioInterruptNone, "Port interrupt has to be enbaled for testing." );
         return;
     }
-
-    /* set up port A for interrupt */
-    xtestIotGpioHandleA = iot_gpio_open( ltestIotGpioPortA );
-    TEST_ASSERT_NOT_EQUAL( NULL, xtestIotGpioHandleA );
-
-    iot_gpio_set_callback( xtestIotGpioHandleA, prvGpioInterruptCallback, &xGpioInterruptA );
 
     /* set up GPIO port B with different mode for port A to read */
     xtestIotGpioHandleB = iot_gpio_open( ltestIotGpioPortB );
@@ -647,6 +639,10 @@ static void testIotGpioInterrupt( IotGpioInterrupt_t eGpioInterrupt )
         lRetVal = iot_gpio_write_sync( xtestIotGpioHandleB, ucValueB );
         TEST_ASSERT_EQUAL( IOT_GPIO_SUCCESS, lRetVal );
 
+        /* set up port A for interrupt */
+        xtestIotGpioHandleA = iot_gpio_open( ltestIotGpioPortA );
+        TEST_ASSERT_NOT_EQUAL( NULL, xtestIotGpioHandleA );
+
         lRetVal = iot_gpio_ioctl( xtestIotGpioHandleA, eSetGpioDirection, &xGpioDirectionA );
         TEST_ASSERT_EQUAL( IOT_GPIO_SUCCESS, lRetVal );
 
@@ -658,6 +654,8 @@ static void testIotGpioInterrupt( IotGpioInterrupt_t eGpioInterrupt )
         if( lRetVal != IOT_GPIO_FUNCTION_NOT_SUPPORTED )
         {
             TEST_ASSERT_EQUAL( IOT_GPIO_SUCCESS, lRetVal );
+
+            iot_gpio_set_callback( xtestIotGpioHandleA, prvGpioInterruptCallback, &xGpioInterruptA );
 
             /* Toggle port B to trigger interrupt for port A */
             ucValueB ^= 1;
@@ -751,8 +749,6 @@ TEST( TEST_IOT_GPIO, AFQP_IotGpioOperation )
     xtestIotGpioHandleA = iot_gpio_open( ucPort );
     TEST_ASSERT_NOT_EQUAL( NULL, xtestIotGpioHandleA );
 
-    iot_gpio_set_callback( xtestIotGpioHandleA, prvGpioCallback, &ucPort );
-
     if( TEST_PROTECT() )
     {
         lRetVal = iot_gpio_ioctl( xtestIotGpioHandleA, eSetGpioPull, &xGpioPull );
@@ -781,6 +777,8 @@ TEST( TEST_IOT_GPIO, AFQP_IotGpioOperation )
             lRetVal = iot_gpio_ioctl( xtestIotGpioHandleA, eSetGpioDirection, &xGpioDirection );
             TEST_ASSERT_EQUAL( IOT_GPIO_SUCCESS, lRetVal );
 
+            iot_gpio_set_callback( xtestIotGpioHandleA, prvGpioCallback, &ucPort );
+
             lRetValInt = iot_gpio_ioctl( xtestIotGpioHandleA, eSetGpioInterrupt, &xGpioInterrupt );
 
             if( lRetValInt != IOT_GPIO_FUNCTION_NOT_SUPPORTED )
@@ -794,7 +792,7 @@ TEST( TEST_IOT_GPIO, AFQP_IotGpioOperation )
             /* write operation */
             ucValue = ( ustestIotGpioConfig & testIotGPIO_TEST_VALUE_MASK ) >> testIotGPIO_TEST_VALUE_BIT;
 
-            configPRINTF( ( "\nGPIO[%d] write value = 0x%x\n", ucPort, ucValue ) );
+            printf( "\nGPIO[%d] write value = 0x%x\n", ucPort, ucValue );
 
             lRetVal = iot_gpio_write_sync( xtestIotGpioHandleA, ucValue );
             TEST_ASSERT_EQUAL( IOT_GPIO_SUCCESS, lRetVal );
@@ -804,13 +802,13 @@ TEST( TEST_IOT_GPIO, AFQP_IotGpioOperation )
             /* read operation */
             lRetVal = iot_gpio_read_sync( xtestIotGpioHandleA, &ucValue );
             TEST_ASSERT_EQUAL( IOT_GPIO_SUCCESS, lRetVal );
-            configPRINTF( ( "\nGPIO[%d] read value = 0x%x\n", ucPort, ucValue ) );
+            printf( "\nGPIO[%d] read value = 0x%x\n", ucPort, ucValue );
         }
 
         if( ( ustestIotGpioConfig & testIotGPIO_TEST_IRQ_MASK ) &&
             ( lRetValInt != IOT_GPIO_FUNCTION_NOT_SUPPORTED ) )
         {
-            configPRINTF( ( "press GPIO[%d] to trigger interrupt to continue...\n", ucPort ) );
+            printf( "press GPIO[%d] to trigger interrupt to continue...\n", ucPort );
             lRetVal = xSemaphoreTake( xtestIotGpioSemaphore, ultestIotGpioWaitTime );
             TEST_ASSERT_EQUAL( pdTRUE, lRetVal );
         }
