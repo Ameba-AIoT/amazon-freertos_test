@@ -41,7 +41,7 @@
 #include "iot_logging_task.h"
 #include "iot_wifi.h"
 #include "aws_clientcredential.h"
-#include "aws_application_version.h"
+//#include "aws_application_version.h"
 #include "aws_dev_mode_key_provisioning.h"
 
 #if 0
@@ -53,7 +53,7 @@ const AppVersion32_t xAppFirmwareVersion = {
 };
 #endif
 
-int errno = 0;
+//int errno = 0;
 
 /* Logging Task Defines. */
 #define mainLOGGING_MESSAGE_QUEUE_LENGTH    ( 15 )
@@ -162,6 +162,9 @@ int aws_main( void )
 {
    BaseType_t ret;
 
+    /* wait wifi ready */
+    vTaskDelay(5000);
+
     /* Perform any hardware initialization that does not require the RTOS to be
      * running.  */
     prvMiscInitialization();
@@ -194,6 +197,8 @@ static void prvMiscInitialization( void )
     /* FIX ME: Perform any hardware initializations, that don't require the RTOS to be
      * running, here.
      */
+    // initialize HW crypto
+    //platform_set_malloc_free( (void*(*)( size_t ))calloc, vPortFree);
 }
 /*-----------------------------------------------------------*/
 
@@ -207,17 +212,19 @@ void vApplicationDaemonTaskStartupHook( void )
      * have been imported into the project. If you are not using Wi-Fi, see the
      * vApplicationIPNetworkEventHook function. */
     //#if 0
-        if( SYSTEM_Init() == pdPASS )
-        {
-            /* Connect to the Wi-Fi before running the tests. */
-            prvWifiConnect();  
+    if( SYSTEM_Init() == pdPASS )
+    {
+        /* Connect to the Wi-Fi before running the tests. */
+        //prvWifiConnect();
 
-            /* Provision the device with AWS certificate and private key. */
-            vDevModeKeyProvisioning();
-
-            /* Start the demo tasks. */
-            DEMO_RUNNER_RunDemos();
-        }
+        /* Key provisioning is done in the fleet_provisioning_demo.c*/
+#if !defined(CONFIG_FLEET_PROVISIONING_DEMO_ENABLED)
+        /* Provision the device with AWS certificate and private key. */
+        vDevModeKeyProvisioning();
+#endif
+        /* Start the demo tasks. */
+        DEMO_RUNNER_RunDemos();
+    }
     //#endif
 }
 /*-----------------------------------------------------------*/
@@ -252,7 +259,8 @@ void prvWifiConnect( void )
 {
         WIFINetworkParams_t xNetworkParams;
         WIFIReturnCode_t xWifiStatus;
-        uint8_t ucTempIp[4] = { 0 };
+        WIFIIPConfiguration_t xIPInfo;
+        uint8_t *ucTempIp;
 
         xWifiStatus = WIFI_On();
 
@@ -274,12 +282,14 @@ void prvWifiConnect( void )
         }
 
         /* Setup parameters. */
-        xNetworkParams.pcSSID = clientcredentialWIFI_SSID;
+        memset( xNetworkParams.ucSSID, 0x00, wificonfigMAX_SSID_LEN );
+        memcpy( xNetworkParams.ucSSID, clientcredentialWIFI_SSID, sizeof( clientcredentialWIFI_SSID ) ); // xNetworkParams.pcSSID = clientcredentialWIFI_SSID;
         xNetworkParams.ucSSIDLength = sizeof( clientcredentialWIFI_SSID );
-        xNetworkParams.pcPassword = clientcredentialWIFI_PASSWORD;
-        xNetworkParams.ucPasswordLength = sizeof( clientcredentialWIFI_PASSWORD );
+        memset( xNetworkParams.xPassword.xWPA.cPassphrase, 0x00, wificonfigMAX_PASSPHRASE_LEN );
+        memcpy( xNetworkParams.xPassword.xWPA.cPassphrase, clientcredentialWIFI_PASSWORD, sizeof( clientcredentialWIFI_PASSWORD )); // xNetworkParams.pcPassword = clientcredentialWIFI_PASSWORD;
+        xNetworkParams.xPassword.xWPA.ucLength = sizeof( clientcredentialWIFI_PASSWORD );
         xNetworkParams.xSecurity = clientcredentialWIFI_SECURITY;
-        xNetworkParams.cChannel = 0;
+        xNetworkParams.ucChannel = 0;
 
         xWifiStatus = WIFI_ConnectAP( &( xNetworkParams ) );
 
@@ -287,7 +297,8 @@ void prvWifiConnect( void )
         {
             configPRINTF( ( "Wi-Fi Connected to AP. Creating tasks which use network...\r\n" ) );
 
-            xWifiStatus = WIFI_GetIP( ucTempIp );
+            xWifiStatus = WIFI_GetIPInfo( &xIPInfo );
+            ucTempIp = ( uint8_t * ) ( &xIPInfo.xIPAddress.ulAddress[0] );
             if ( eWiFiSuccess == xWifiStatus )
             {
                 configPRINTF( ( "IP Address acquired %d.%d.%d.%d\r\n",
@@ -296,28 +307,28 @@ void prvWifiConnect( void )
         }
         else
         {
-			#if 0
-				/* Connection failed, configure SoftAP. */
-				configPRINTF( ( "Wi-Fi failed to connect to AP %s.\r\n", xNetworkParams.pcSSID ) );
+            #if 0
+            /* Connection failed, configure SoftAP. */
+            configPRINTF( ( "Wi-Fi failed to connect to AP %s.\r\n", xNetworkParams.pcSSID ) );
 
-				xNetworkParams.pcSSID = wificonfigACCESS_POINT_SSID_PREFIX;
-				xNetworkParams.pcPassword = wificonfigACCESS_POINT_PASSKEY;
-				xNetworkParams.xSecurity = wificonfigACCESS_POINT_SECURITY;
-				xNetworkParams.cChannel = wificonfigACCESS_POINT_CHANNEL;
+            xNetworkParams.pcSSID = wificonfigACCESS_POINT_SSID_PREFIX;
+            xNetworkParams.pcPassword = wificonfigACCESS_POINT_PASSKEY;
+            xNetworkParams.xSecurity = wificonfigACCESS_POINT_SECURITY;
+            xNetworkParams.cChannel = wificonfigACCESS_POINT_CHANNEL;
 
-				configPRINTF( ( "Connect to SoftAP %s using password %s. \r\n",
-								xNetworkParams.pcSSID, xNetworkParams.pcPassword ) );
+            configPRINTF( ( "Connect to SoftAP %s using password %s. \r\n",
+                            xNetworkParams.pcSSID, xNetworkParams.pcPassword ) );
 
-				while( WIFI_ConfigureAP( &xNetworkParams ) != eWiFiSuccess )
-				{
-					configPRINTF( ( "Connect to SoftAP %s using password %s and configure Wi-Fi. \r\n",
-									xNetworkParams.pcSSID, xNetworkParams.pcPassword ) );
-				}
+            while( WIFI_ConfigureAP( &xNetworkParams ) != eWiFiSuccess )
+            {
+                configPRINTF( ( "Connect to SoftAP %s using password %s and configure Wi-Fi. \r\n",
+                                xNetworkParams.pcSSID, xNetworkParams.pcPassword ) );
+            }
 
-				configPRINTF( ( "Wi-Fi configuration successful. \r\n" ) );
-			#else
-				configPRINTF( ( "Wi-Fi failed to connect to AP.\r\n" ) );
-			#endif
+            configPRINTF( ( "Wi-Fi configuration successful. \r\n" ) );
+            #else
+            configPRINTF( ( "Wi-Fi failed to connect to AP.\r\n" ) );
+            #endif
         }
 }
 /*-----------------------------------------------------------*/
@@ -329,7 +340,7 @@ void prvWifiConnect( void )
  * implementation of vApplicationGetIdleTaskMemory() in order to provide memory to
  * the Idle task.
  */
-#if 0 //hank
+#if 0
 void vApplicationGetIdleTaskMemory( StaticTask_t ** ppxIdleTaskTCBBuffer,
                                     StackType_t ** ppxIdleTaskStackBuffer,
                                     uint32_t * pulIdleTaskStackSize )
@@ -362,7 +373,7 @@ void vApplicationGetIdleTaskMemory( StaticTask_t ** ppxIdleTaskTCBBuffer,
  * implementation of vApplicationGetTimerTaskMemory() in order to provide memory
  * to the RTOS daemon/time task.
  */
-#if 0 //hank
+#if 0
 void vApplicationGetTimerTaskMemory( StaticTask_t ** ppxTimerTaskTCBBuffer,
                                      StackType_t ** ppxTimerTaskStackBuffer,
                                      uint32_t * pulTimerTaskStackSize )
@@ -436,6 +447,7 @@ void vApplicationStackOverflowHook( TaskHandle_t xTask,
  *
  * @note Do not make any blocking operations in this function.
  */
+#if 0 //define in freertos_v10.2.0/Source/portable/GCC/RTL8721D_HP/non_secure/port.c
 void vApplicationIdleHook( void )
 {
     /* FIX ME. If necessary, update to application idle periodic actions. */
@@ -452,6 +464,7 @@ void vApplicationIdleHook( void )
         xLastPrint = xTimeNow;
     }
 }
+#endif
 /*-----------------------------------------------------------*/
 
 /**
@@ -491,8 +504,8 @@ void vApplicationIdleHook( void )
  * See FreeRTOSConfig.h to define configASSERT to something different.
  */
 #if 0
-void vAssertCalled(const char * pcFile,
-	uint32_t ulLine)
+void vAssertCalled(uint32_t ulLine,
+	const char * pcFile)
 {
     /* FIX ME. If necessary, update to applicable assertion routine actions. */
 
