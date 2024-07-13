@@ -1,0 +1,97 @@
+name: Bug Report
+description: Report any bugs or issues
+labels: ["pending"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        * Please check [Online Documentation](https://www.amebaiot.com/en/amebaz2/)
+        * Please check [FAQ](https://forum.amebaiot.com/c/faq/48), [forum](https://forum.amebaiot.com/)
+        * Please check and search in [List of closed issues](https://github.com/Ameba-AIoT/amazon-freertos/issues?q=is%3Aissue+is%3Aclosed)
+        * Please check and search in [List of existing issues](https://github.com/Ameba-AIoT/amazon-freertos/issues?q=is%3Aopen+is%3Aissue)
+        * If still experiencing the issue, please provide as many details as possible below about your hardware, environment setup and software.
+  - type: input
+    id: br-boards
+    attributes:
+      label: Boards
+      description: What is the hardware/module using?
+      placeholder: eg. AmebaZ2, AmebaD, AmebaDPlus, AmebaPro or AmebaPro2...
+    validations:
+      required: true
+  - type: textarea
+    id: br-ex-hw
+    attributes:
+      label: External Hardware
+      description: Any external hardware that Ameba board attached to?
+      placeholder: eg. third-party extension, plain module on breadboard, customized hardware... please attach a photo if necessary.
+    validations:
+       required: true
+  - type: textarea
+    id: br-addon-hw
+    attributes:
+      label: Hardware Configuration
+      description: Is anything else attached to the Hardware?
+      placeholder: eg. sensors, peripherals...
+    validations:
+      required: true
+  - type: dropdown
+    id: br-version
+    attributes:
+      label: Branch
+      description: Which branch of Realtek Amazon freertos SDK? 
+      options:
+        - FreeRTOS-LTS-202210.xx
+        - amebaPro-5.2h-202107.00-LTS
+        - amebaPro2-9.x-202107.00-LTS
+        - amebaZ2-7.1d-202107.00-LTS
+    validations:
+      required: true
+  - type: textarea
+    id: br-id
+    attributes:
+      label: Commit number
+      description: Please provide error/debug message.
+      placeholder: eg. error message from Arduino IDE...
+      render: plain
+    validations:
+      required: true
+  - type: textarea
+    id: br-description
+    attributes:
+      label: Description
+      description: Please describe the issue/bug here and expected behaviour
+      placeholder: eg. compile error/hard fault/connectiong issue/weird behaviour/missing parameter...
+    validations:
+      required: true
+  - type: textarea
+    id: br-sketch
+    attributes:
+      label: Sketch
+      description: Please provide sketch/code that can be used to reproduce the bug/issue
+      placeholder: eg. example ino files...
+      render: cpp
+    validations:
+     required: true
+  - type: textarea
+    id: br-error
+    attributes:
+      label: Error/Debug Message
+      description: Please provide error/debug message.
+      placeholder: eg. error message from IDE...
+      render: plain
+    validations:
+      required: true
+  - type: textarea
+    id: br-remarks
+    attributes:
+      label: Reproduce remarks
+      description: Is there additional information that will help to reproduce?
+      placeholder: eg. disabled macro and there is no issues...
+  - type: checkboxes
+    id: br-confirmation
+    attributes:
+      label: I have checked online documentation, FAQ, GitHub Wiki and existing/closed issues.
+      description: Before opening a new issue, please check all resources above.
+      options:
+        - label: I confirm I have checked online documentation, FAQ, GitHub Wiki and existing/closed issues.
+          required: true
