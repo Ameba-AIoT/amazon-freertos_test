@@ -323,13 +323,6 @@ WIFIReturnCode_t WIFI_SetMode( WIFIDeviceMode_t xDeviceMode )
                 printf("\n\rERROR: Wifi on failed!");
             }
             break;
-        case eWiFiModeP2P:
-            wifi_off();
-            vTaskDelay(20);
-            if (wifi_on(RTW_MODE_P2P) < 0){
-                printf("\n\rERROR: Wifi on failed!");
-            }
-            break;
         default:
         	ret = eWiFiFailure;
             break;
@@ -354,9 +347,6 @@ WIFIReturnCode_t WIFI_GetMode( WIFIDeviceMode_t * pxDeviceMode )
             break;
         case RTW_MODE_AP:
             * pxDeviceMode = eWiFiModeAP;
-            break;
-        case RTW_MODE_P2P:
-            * pxDeviceMode = eWiFiModeP2P;
             break;
         default:
             return eWiFiPMNotSupported;
