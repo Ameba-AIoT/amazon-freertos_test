@@ -14,7 +14,7 @@
 	path = libraries/3rdparty/Unity
 	url = https://github.com/ThrowTheSwitch/Unity.git
 [submodule "libraries/abstractions/backoffAlgorithm"]
-	path = libraries/abstractions/backoffAlgorithm
+	path = libraries/abstractions/backoff_algorithm
 	url = https://github.com/FreeRTOS/backoffAlgorithm.git
 [submodule "libraries/abstractions/freertos-ota-pal-psa"]
 	path = libraries/abstractions/freertos-ota-pal-psa
@@ -38,19 +38,19 @@
 	path = libraries/coreMQTT-Agent
 	url = https://github.com/FreeRTOS/coreMQTT-Agent.git
 [submodule "libraries/Device-Defender-for-AWS-IoT-embedded-sdk"]
-	path = libraries/Device-Defender-for-AWS-IoT-embedded-sdk
+	path = libraries/device_defender_for_aws
 	url = https://github.com/aws/Device-Defender-for-AWS-IoT-embedded-sdk.git
 [submodule "libraries/Device-Shadow-for-AWS-IoT-embedded-sdk"]
-	path = libraries/Device-Shadow-for-AWS-IoT-embedded-sdk
+	path = libraries/device_shadow_for_aws
 	url = https://github.com/aws/Device-Shadow-for-AWS-IoT-embedded-sdk.git
 [submodule "libraries/Fleet-Provisioning-for-AWS-IoT-embedded-sdk"]
-	path = libraries/Fleet-Provisioning-for-AWS-IoT-embedded-sdk
+	path = libraries/fleet-provisioning
 	url = https://github.com/aws/Fleet-Provisioning-for-AWS-IoT-embedded-sdk.git
 [submodule "libraries/Jobs-for-AWS-IoT-embedded-sdk"]
-	path = libraries/Jobs-for-AWS-IoT-embedded-sdk
+	path = libraries/jobs_for_aws
 	url = https://github.com/aws/Jobs-for-AWS-IoT-embedded-sdk.git
 [submodule "libraries/ota-for-aws-iot-embedded-sdk"]
-	path = libraries/ota-for-aws-iot-embedded-sdk
+	path = libraries/ota_for_aws
 	url = https://github.com/aws/ota-for-aws-iot-embedded-sdk.git
 [submodule "libraries/freertos_plus/standard/FreeRTOS-Plus-TCP"]
 	path = libraries/freertos_plus/standard/FreeRTOS-Plus-TCP
