@@ -20,14 +20,14 @@
 	path = libraries/corePKCS11
 	url = https://github.com/FreeRTOS/corePKCS11.git
 [submodule "libraries/Device-Defender-for-AWS-IoT-embedded-sdk"]
-	path = libraries/Device-Defender-for-AWS-IoT-embedded-sdk
+	path = libraries/device_defender_for_aws
 	url = https://github.com/aws/Device-Defender-for-AWS-IoT-embedded-sdk.git
 [submodule "libraries/Device-Shadow-for-AWS-IoT-embedded-sdk"]
-	path = libraries/Device-Shadow-for-AWS-IoT-embedded-sdk
+	path = libraries/device_shadow_for_aws
 	url = https://github.com/aws/Device-Shadow-for-AWS-IoT-embedded-sdk.git
 [submodule "libraries/Jobs-for-AWS-IoT-embedded-sdk"]
-	path = libraries/Jobs-for-AWS-IoT-embedded-sdk
+	path = libraries/jobs_for_aws
 	url = https://github.com/aws/Jobs-for-AWS-IoT-embedded-sdk.git
 [submodule "libraries/ota-for-aws-iot-embedded-sdk"]
-	path = libraries/ota-for-aws-iot-embedded-sdk
+	path = libraries/ota_for_aws
 	url = https://github.com/aws/ota-for-aws-iot-embedded-sdk.git
