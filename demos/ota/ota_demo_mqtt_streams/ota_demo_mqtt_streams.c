@@ -375,8 +375,6 @@ void prvRunOTAStreamsDemo( void )
             processOTAEvents();
         }
     }
-    
-    return xStatus;
 }
 
 /*-----------------------------------------------------------*/
