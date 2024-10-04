@@ -41,6 +41,15 @@
 #include "freertos_command_pool.h"
 #include "freertos_agent_message.h"
 
+/* Logging subsystem include */
+#ifndef LIBRARY_LOG_NAME
+    #define LIBRARY_LOG_NAME    "MQTTLogAgent"
+#endif
+#ifndef LIBRARY_LOG_LEVEL
+    #define LIBRARY_LOG_LEVEL    LOG_INFO
+#endif
+#include "logging_stack.h"
+
 /*-----------------------------------------------------------*/
 
 #define QUEUE_NOT_INITIALIZED    ( 0U )
