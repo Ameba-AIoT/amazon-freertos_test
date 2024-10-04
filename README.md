@@ -1,11 +1,18 @@
 # FreeRTOS AWS Reference Integrations
+
+## WORK IN PROGRESS BRANCH
+This is a Work In Progress branch for FreeRTOS 202406.xx Support! Do not use for PRODUCTION until this warning is removed!!
+Please obtain Base SDK and patches from Realtek as the public repositories are currently in the process of being updated!
+
 ## How to use
 This is the library sdk which provides Amazon freertos examples. To make sure example working correctly, please download the working chip sdk from related page with this submodule updated.
 
 |Chip         |          Link       |     Supported branch link      |
 |:----------- |:---------------------:| :---------------------:|
-|Ameba Z2     | https://github.com/Ameba-AIoT/ambz2_sdk| https://github.com/Ameba-AIoT/amazon-freertos/tree/amebaZ2-7.1d-202107.00-LTS |
-|The rest chip is under developing   |comming soon | comming soon|
+|Ameba Z2     | https://github.com/Ameba-AIoT/ameba-rtos-z2 | https://github.com/Ameba-AIoT/amazon-freertos/tree/amebaZ2-7.1d-202107.00-LTS |
+|Ameba D     | https://github.com/Ameba-AIoT/ameba-rtos-d/ | https://github.com/Ameba-AIoT/ameba-amazon-freertos |
+|Ameba DPlus     | https://github.com/Ameba-AIoT/ameba-rtos | https://github.com/Ameba-AIoT/ameba-amazon-freertos |
+|Ameba Smart     | https://github.com/Ameba-AIoT/ameba-rtos | https://github.com/Ameba-AIoT/ameba-amazon-freertos |
 
 
 ## Cloning
@@ -40,10 +47,10 @@ For detailed documentation on FreeRTOS, refer to the [FreeRTOS User Guide](https
 For additional boards that are supported for FreeRTOS, please visit the [AWS Device Catalog](https://devices.amazonaws.com/search?kw=freertos)
 
 The following MCU boards are supported for FreeRTOS:
-1. **Realtek** - [AamebaD](https://www.amebaiot.com/en/amebad).
+1. **Realtek Ameba D** - [AmebaD](https://www.amebaiot.com/en/amebad).
     * [Getting Started Guide](https://github.com/ambiot/amazon-freertos/blob/master/AmebaD_Amazon_FreeRTOS_Getting_Started_Guide_v1.6.pdf)
     * IDEs: [IAR Embedded Workbench](https://www.iar.com/iar-embedded-workbench/partners/texas-instruments)
-2. **Realtek** - [AmebaZ2](https://www.amebaiot.com/en/amebaz2).
+2. **Realtek Ameba Z2** - [AmebaZ2](https://www.amebaiot.com/en/amebaz2).
     * [Getting Started Guide](https://github.com/ambiot/amazon-freertos/blob/master/AmebaZ2_Amazon_FreeRTOS_Getting_Started_Guide_v1.0.pdf)
     * IDEs: [IAR Embedded Workbench](https://www.iar.com/iar-embedded-workbench/partners/texas-instruments)
 3. **Windows Simulator** - To evaluate FreeRTOS without using MCU-based hardware, you can use the Windows Simulator.
@@ -60,33 +67,33 @@ This repository uses Mbed TLS under Apache 2.0
 
 # Support list
 
+## AmebaZ2
+
+(WIP!)
+
 ## AmebaD
 Work with 
 
 sdk-amebad_v6.2C-RC.tar.gz + 
 
-6.2_patch_integrated_231211_25b3bc38.zip +
+6.2_patch_integrated_240816_821f1f1d.zip +
 
-6.2c_patch_Support_Amazon_v202210_LTS_w231211_240124_(v01).zip
+6.2c_patch_Support_Amazon_v202406_LTS_w240816_XXXXXX_(v01).zip (TODO!)
 
 
 ## AmebaDplus
 Work with
 
-sdk-RTL8722F_v11.1b_beta +
-
-11.1b_bata_patch_amazon_v202210-LTS_20240118_(v01).zip
+(WIP!)
 
 
 ## AmebaSmart
 Work with
 
-sdk-RTL8730E_v8.5b_beta + 
-
-8.5b_bata_patch_amazon_v202210-LTS_20240219_(v01).zip
+(WIP!)
 
 # History link
 
-This repository is carry from and continue develop from old repository link
+This repository is continuing development from old repository link
 
 https://github.com/ambiot/amazon-freertos
