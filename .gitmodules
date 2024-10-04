@@ -31,3 +31,6 @@
 [submodule "libraries/ota-for-aws-iot-embedded-sdk"]
 	path = libraries/ota_for_aws
 	url = https://github.com/aws/ota-for-aws-iot-embedded-sdk.git
+[submodule "libraries/mqtt_file_streams_for_aws"]
+	path = libraries/mqtt_file_streams_for_aws
+	url = https://github.com/aws/aws-iot-core-mqtt-file-streams-embedded-c.git
