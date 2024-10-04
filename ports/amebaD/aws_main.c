@@ -73,6 +73,12 @@ extern int RunOtaCoreMqttDemo( bool xAwsIotMqttMode,
                                void * pNetworkServerInfo,
                                void * pNetworkCredentialInfo,
                                const IotNetworkInterface_t * pxNetworkInterface );
+
+extern int RunOtaCoreMqttStreamsDemo( bool xAwsIotMqttMode,
+                               const char * pIdentifier,
+                               void * pNetworkServerInfo,
+                               void * pNetworkCredentialInfo,
+                               const IotNetworkInterface_t * pxNetworkInterface );
 /*-----------------------------------------------------------*/
 /**
  * @brief Application runtime entry point.
@@ -108,6 +114,9 @@ int aws_main( void )
 
     //ota over mqtt demo
     //RunOtaCoreMqttDemo(0, NULL, NULL, NULL, NULL);
+
+    //ota over mqtt streams demo (NEW!)
+    //RunOtaCoreMqttStreamsDemo(0, NULL, NULL, NULL, NULL);
 
     return 0;
 }
