@@ -1,9 +1,5 @@
 # FreeRTOS AWS Reference Integrations
 
-## WORK IN PROGRESS BRANCH
-This is a Work In Progress branch for FreeRTOS 202406.xx Support! Do not use for PRODUCTION until this warning is removed!!
-Please obtain Base SDK and patches from Realtek as the public repositories are currently in the process of being updated!
-
 ## How to use
 This is the library sdk which provides Amazon freertos examples. To make sure example working correctly, please download the working chip sdk from related page with this submodule updated.
 
