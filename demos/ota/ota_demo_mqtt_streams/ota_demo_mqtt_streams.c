@@ -1012,10 +1012,9 @@ static void processOTAEvents( void )
                 /* notify AWS of the image download success before resetting the device */
                 sendSuccessMessage();
                 vTaskDelay(3000);
-                otaPal_Streams_ResetDevice( NULL );
-
                 LogInfo(( "\n\n\n========== DEVICE IS NOW RESETTING!! ========== \n\n\n" ));
-
+                otaPal_Streams_ResetDevice( NULL );
+                
                 nextEvent.eventId = OtaAgentEventActivateImage_New;
                 OtaSendEvent_FreeRTOS_New( &nextEvent );
             }

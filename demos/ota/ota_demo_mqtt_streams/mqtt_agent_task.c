@@ -94,7 +94,7 @@
 
 /* Include required to pass unsolicited publishes to the OTA demo. */
 #include "ota_demo_mqtt_streams.h"
-
+#include "ota_demo_config.h"
 /**
  * @brief Dimensions the buffer used to serialize and deserialize MQTT packets.
  * @note Specified in bytes.  Must be large enough to hold the maximum
