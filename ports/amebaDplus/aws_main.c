@@ -108,7 +108,7 @@ int aws_main( void )
     }
 
     //mqtt mutual auto demo
-    //RunCoreMqttMutualAuthDemo(0, NULL, NULL, NULL, NULL);
+    RunCoreMqttMutualAuthDemo(0, NULL, NULL, NULL, NULL);
 
     //http mutual auto demo
     //RunCoreHttpMutualAuthDemo(0, NULL, NULL, NULL, NULL);
@@ -123,7 +123,7 @@ int aws_main( void )
     //RunOtaCoreMqttDemo(0, NULL, NULL, NULL, NULL);
 
     //ota over mqtt streams demo (NEW!)
-    RunOtaCoreMqttStreamsDemo(0, NULL, NULL, NULL, NULL);
+    //RunOtaCoreMqttStreamsDemo(0, NULL, NULL, NULL, NULL);
 
     return 0;
 }
