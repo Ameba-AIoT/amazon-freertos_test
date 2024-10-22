@@ -16,6 +16,6 @@
 #ifndef MQTT_FILE_DOWNLOADER_CONFIG_H
 #define MQTT_FILE_DOWNLOADER_CONFIG_H
 
-#define mqttFileDownloader_CONFIG_BLOCK_SIZE 2048U
+#define mqttFileDownloader_CONFIG_BLOCK_SIZE 8192U
 
 #endif /* #ifndef MQTT_FILE_DOWNLOADER_CONFIG_H */
