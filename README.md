@@ -26,7 +26,7 @@ git clone https://github.com/Ameba-AIoT/ameba-rtos-z2.git
 
     Run the following command under the path: SDK/component/common/application/amazon
 ```
-git clone --recursive --branch amebaZ2-7.1d-202107.00-LTS --depth 1 https://github.com/Ameba-AIoT/ameba-amazon-freertos.git freertos_LTS
+git clone --recursive --branch amebaZ2-7.1d-202107.00-LTS --depth 1 https://github.com/Ameba-AIoT/ameba-amazon-freertos.git amazon-freertos
 ```
  then you will see all the source code in file: SDK/component/common/application/amazon/freertos_LTS/	Work with https://github.com/Ameba-AIoT/ameba-amazon-freertos/tree/amebaZ2-7.1d-202107.00-LTS @ a94ee6fa1902ad98b0d13cdfe798b591a9f35a17
 
@@ -78,7 +78,7 @@ Configurations are the same. Need to rename "Makefile.amazon" to "Makefile", and
 
 To make image
 cd to ``project/realtek_amebaz2_v0_example/GCC-RELEASE`` and 
-use command ``make clean``  ``make amazon`` and ``make is`` to build image
+use command ``make clean``  ``make lib_amazon`` and ``make is`` to build image
 
 8. Configure ota_demo_config.h for OTA demo
    
