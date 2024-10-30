@@ -28,7 +28,7 @@ git clone https://github.com/Ameba-AIoT/ameba-rtos-z2.git
 ```
 git clone --recursive --branch amebaZ2-7.1d-202107.00-LTS --depth 1 https://github.com/Ameba-AIoT/ameba-amazon-freertos.git amazon-freertos
 ```
- then you will see all the source code in file: SDK/component/common/application/amazon/freertos_LTS/	Work with https://github.com/Ameba-AIoT/ameba-amazon-freertos/tree/amebaZ2-7.1d-202107.00-LTS @ a94ee6fa1902ad98b0d13cdfe798b591a9f35a17
+ then you will see all the source code in file: SDK/component/common/application/amazon/amazon-freertos/	Work with https://github.com/Ameba-AIoT/ameba-amazon-freertos/tree/amebaZ2-7.1d-202107.00-LTS @ a94ee6fa1902ad98b0d13cdfe798b591a9f35a17
 
 4. Clone the amebaZ2 FreeRTOS-Kernel repository from Github (https://github.com/FreeRTOS/FreeRTOS-Kernel.git)
 
