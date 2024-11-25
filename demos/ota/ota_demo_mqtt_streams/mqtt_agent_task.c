@@ -93,6 +93,7 @@
 #include "iot_default_root_certificates.h"
 
 /* Include required to pass unsolicited publishes to the OTA demo. */
+#include "ota_config.h"
 #include "ota_demo_mqtt_streams.h"
 #include "ota_demo_config.h"
 /**
