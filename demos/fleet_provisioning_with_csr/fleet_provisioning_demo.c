@@ -1043,13 +1043,21 @@ static BaseType_t prvConnectToServerWithBackoffRetries( NetworkContext_t * pxNet
 
     /* Configure credentials for TLS mutual authenticated session. */
     xSocketsConfig.enableTls = true;
-    xSocketsConfig.pAlpnProtos = NULL;
+    xSocketsConfig.ppcAlpnProtos = NULL;
     xSocketsConfig.maxFragmentLength = 0;
     xSocketsConfig.disableSni = false;
     xSocketsConfig.pRootCa = democonfigROOT_CA_PEM;
     xSocketsConfig.rootCaSize = sizeof( democonfigROOT_CA_PEM );
     xSocketsConfig.sendTimeoutMs = mqttexampleTRANSPORT_SEND_RECV_TIMEOUT_MS;
     xSocketsConfig.recvTimeoutMs = mqttexampleTRANSPORT_SEND_RECV_TIMEOUT_MS;
+
+    char* ppcAlpnProtocols[] = { socketsAWS_IOT_ALPN_MQTT };
+
+    /* AWS: Port 443 requires ALPN, port 8443 does not. */
+    if (xServerInfo.port == 443) {
+        xSocketsConfig.ppcAlpnProtos = ppcAlpnProtocols;
+        xSocketsConfig.ulAlpnProtosCount = 1;
+    }
 
     /* Initialize reconnect attempts and interval. */
     BackoffAlgorithm_InitializeParams( &xReconnectParams,

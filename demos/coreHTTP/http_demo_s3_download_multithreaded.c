@@ -386,13 +386,21 @@ static BaseType_t prvConnectToServer( NetworkContext_t * pxNetworkContext )
 
     /* Configure credentials for TLS server-authenticated session. */
     xSocketsConfig.enableTls = true;
-    xSocketsConfig.pAlpnProtos = NULL;
+    xSocketsConfig.ppcAlpnProtos = NULL;
     xSocketsConfig.maxFragmentLength = 0;
     xSocketsConfig.disableSni = false;
     xSocketsConfig.pRootCa = democonfigROOT_CA_PEM;
     xSocketsConfig.rootCaSize = sizeof( democonfigROOT_CA_PEM );
     xSocketsConfig.sendTimeoutMs = democonfigTRANSPORT_SEND_RECV_TIMEOUT_MS;
     xSocketsConfig.recvTimeoutMs = democonfigTRANSPORT_SEND_RECV_TIMEOUT_MS;
+
+    char* ppcAlpnProtocols[] = { socketsAWS_IOT_ALPN_MQTT };
+
+    /* AWS: Port 443 requires ALPN, port 8443 does not. */
+    if (xServerInfo.port == 443) {
+        xSocketsConfig.ppcAlpnProtos = ppcAlpnProtocols;
+        xSocketsConfig.ulAlpnProtosCount = 1;
+    }
 
     /* Establish a TLS session with the HTTP server. This example connects
      * to the server host located in democonfigPRESIGNED_GET_URL and

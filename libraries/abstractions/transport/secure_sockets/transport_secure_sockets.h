@@ -110,15 +110,16 @@ typedef struct SocketsConfig
     uint32_t recvTimeoutMs; /**< @brief Timeout for transport recv. */
 
     /**
-     * @brief Set this to a non-NULL value to use ALPN.
+     * @brief This contains a list of protocol strings in the form of char* []
      *
-     * This string must be NULL-terminated.
+     * Each string must be NULL-terminated, and ulAlpnProtosCount should be updated with the number of protocol strings in the list
      *
      * See [this link]
      * (https://aws.amazon.com/blogs/iot/mqtt-with-tls-client-authentication-on-port-443-why-it-is-useful-and-how-it-works/)
      * for more information.
      */
-    const char * pAlpnProtos;
+    const char ** ppcAlpnProtos;
+    uint32_t ulAlpnProtosCount;
 
     /**
      * @brief Disable server name indication (SNI) for a TLS session.

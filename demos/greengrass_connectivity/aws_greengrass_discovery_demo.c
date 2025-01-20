@@ -413,13 +413,21 @@ static BaseType_t prvConnectToServerWithBackoffRetries( GGD_HostAddressData_t * 
 
     /* Configure credentials for TLS mutual authenticated session. */
     xSocketsConfig.enableTls = true;
-    xSocketsConfig.pAlpnProtos = NULL;
+    xSocketsConfig.ppcAlpnProtos = NULL;
     xSocketsConfig.maxFragmentLength = 0;
     xSocketsConfig.disableSni = true;
     xSocketsConfig.pRootCa = pxHostAddressData->pcCertificate;
     xSocketsConfig.rootCaSize = ( size_t ) pxHostAddressData->ulCertificateSize;
     xSocketsConfig.sendTimeoutMs = TRANSPORT_SEND_RECV_TIMEOUT_MS;
     xSocketsConfig.recvTimeoutMs = TRANSPORT_SEND_RECV_TIMEOUT_MS;
+
+    char* ppcAlpnProtocols[] = { socketsAWS_IOT_ALPN_MQTT };
+
+    /* AWS: Port 443 requires ALPN, port 8443 does not. */
+    if (xServerInfo.port == 443) {
+        xSocketsConfig.ppcAlpnProtos = ppcAlpnProtocols;
+        xSocketsConfig.ulAlpnProtosCount = 1;
+    }
 
     /* Initialize reconnect attempts and interval. */
     BackoffAlgorithm_InitializeParams( &xReconnectParams,

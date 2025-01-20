@@ -433,9 +433,12 @@ static TransportSocketStatus_t prvConnectToServerWithBackoffRetries( NetworkCont
      * endpoint in the link below.
      * https://aws.amazon.com/blogs/iot/mqtt-with-tls-client-authentication-on-port-443-why-it-is-useful-and-how-it-works/
      */
-    if( xServerInfo.port == 443 )
-    {
-        xSocketConfig.pAlpnProtos = socketsAWS_IOT_ALPN_MQTT;
+    char* ppcAlpnProtocols[] = { socketsAWS_IOT_ALPN_MQTT };
+
+    /* AWS: Port 443 requires ALPN, port 8443 does not. */
+    if (xServerInfo.port == 443) {
+        xSocketConfig.ppcAlpnProtos = ppcAlpnProtocols;
+        xSocketConfig.ulAlpnProtosCount = 1;
     }
 
     xSocketConfig.maxFragmentLength = 0;

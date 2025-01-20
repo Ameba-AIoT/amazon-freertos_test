@@ -1453,13 +1453,21 @@ static BaseType_t prvCreateSocketConnectionToMQTTBroker( NetworkContext_t * pxNe
 
     /* Configure credentials for TLS mutual authenticated session. */
     xSocketsConfig.enableTls = true;
-    xSocketsConfig.pAlpnProtos = NULL;
+    xSocketsConfig.ppcAlpnProtos = NULL;
     xSocketsConfig.maxFragmentLength = 0;
     xSocketsConfig.disableSni = false;
     xSocketsConfig.pRootCa = democonfigROOT_CA_PEM;
     xSocketsConfig.rootCaSize = sizeof( democonfigROOT_CA_PEM );
     xSocketsConfig.sendTimeoutMs = otaexampleMQTT_TRANSPORT_SEND_RECV_TIMEOUT_MS;
     xSocketsConfig.recvTimeoutMs = otaexampleMQTT_TRANSPORT_SEND_RECV_TIMEOUT_MS;
+
+    char* ppcAlpnProtocols[] = { socketsAWS_IOT_ALPN_MQTT };
+
+    /* AWS: Port 443 requires ALPN, port 8443 does not. */
+    if (xServerInfo.port == 443) {
+        xSocketsConfig.ppcAlpnProtos = ppcAlpnProtocols;
+        xSocketsConfig.ulAlpnProtosCount = 1;
+    }
 
     /* Initialize reconnect attempts and interval. */
     BackoffAlgorithm_InitializeParams( &xReconnectParams,
@@ -1627,13 +1635,21 @@ static int32_t prvConnectToS3Server( NetworkContext_t * pxNetworkContext,
 
     /* Configure credentials for TLS mutual authenticated session. */
     xSocketsConfig.enableTls = true;
-    xSocketsConfig.pAlpnProtos = NULL;
+    xSocketsConfig.ppcAlpnProtos = NULL;
     xSocketsConfig.maxFragmentLength = 0;
     xSocketsConfig.disableSni = false;
     xSocketsConfig.pRootCa = democonfigHTTPS_ROOT_CA_PEM;
     xSocketsConfig.rootCaSize = sizeof( democonfigHTTPS_ROOT_CA_PEM );
     xSocketsConfig.sendTimeoutMs = otaexampleHTTPS_TRANSPORT_SEND_RECV_TIMEOUT_MS;
     xSocketsConfig.recvTimeoutMs = otaexampleHTTPS_TRANSPORT_SEND_RECV_TIMEOUT_MS;
+
+    char* ppcAlpnProtocols[] = { socketsAWS_IOT_ALPN_MQTT };
+
+    /* AWS: Port 443 requires ALPN, port 8443 does not. */
+    if (xServerInfo.port == 443) {
+        xSocketsConfig.ppcAlpnProtos = ppcAlpnProtocols;
+        xSocketsConfig.ulAlpnProtosCount = 1;
+    }
 
     /* Retrieve the address location and length from S3_PRESIGNED_GET_URL. */
     if( pcUrl != NULL )

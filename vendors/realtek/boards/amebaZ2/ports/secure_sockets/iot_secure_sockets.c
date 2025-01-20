@@ -763,7 +763,7 @@ int32_t SOCKETS_SetSockOpt( Socket_t xSocket,
             /* Copy each protocol string. */
             for( ulProtocol = 0; ( ulProtocol < ctx->ulAlpnProtocolsCount - 1 ) ; ulProtocol++ )
             {
-                xLength = strlen( (char *)&ppcAlpnIn[ ulProtocol ] );
+                xLength = strlen( ppcAlpnIn[ulProtocol] );
 
                 if( NULL == ( ctx->ppcAlpnProtocols[ ulProtocol ] =
                                   ( char * ) pvPortMalloc( 1 + xLength ) ) )
@@ -774,7 +774,7 @@ int32_t SOCKETS_SetSockOpt( Socket_t xSocket,
                 else
                 {
                     memcpy( ctx->ppcAlpnProtocols[ ulProtocol ],
-                            &ppcAlpnIn[ ulProtocol ],
+                            ppcAlpnIn[ ulProtocol ],
                             xLength );
                     ctx->ppcAlpnProtocols[ ulProtocol ][ xLength ] = '\0';
                 }
