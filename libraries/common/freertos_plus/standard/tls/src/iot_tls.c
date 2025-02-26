@@ -1123,7 +1123,15 @@ void TLS_Cleanup( void * pvContext )
     if( NULL != pxCtx )
     {
         prvFreeContext( pxCtx );
-
+        
+        /* Deinit PKCS11 */
+        if( ( NULL != pxCtx->pxP11FunctionList ) &&
+            ( NULL != pxCtx->pxP11FunctionList->C_Finalize ) )
+        {
+            pxCtx->pxP11FunctionList->C_Finalize( NULL );
+            TLS_PRINT( ( "INFO: Deinitialized PKCS #11 module!\r\n" ) );
+        }
+        
         /* Free memory. */
         vPortFree( pxCtx );
     }
